@@ -612,7 +612,7 @@ namespace KerbalVR
                 tmp.transform.rotation = activeVessel.transform.rotation;
                 */
                 HmdOn = true;
-
+                log("TEST!!!!!!!!!!!!!!!!!!");
                 log(ScaledSpace.Instance.transform.rotation.eulerAngles.ToString());
                 //setup OpenVR
                 setup();
@@ -855,20 +855,20 @@ namespace KerbalVR
                 HmdMatrix44_t projLeft3 = vrSystem.GetProjectionMatrix(EVREye.Eye_Left, camLeft_Far.nearClipPlane, camLeft_Far.farClipPlane);
                 HmdMatrix44_t projRight3 = vrSystem.GetProjectionMatrix(EVREye.Eye_Right, camRight_Far.nearClipPlane, camRight_Far.farClipPlane);
 
-                camLeft_Far.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft);
-                camRight_Far.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projRight);
+                camLeft_Far.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft3);
+                camRight_Far.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projRight3);
 
                 HmdMatrix44_t projLeft4 = vrSystem.GetProjectionMatrix(EVREye.Eye_Left, leftSky.nearClipPlane, leftSky.farClipPlane);
                 HmdMatrix44_t projRight4 = vrSystem.GetProjectionMatrix(EVREye.Eye_Right, rightSky.nearClipPlane, rightSky.farClipPlane);
 
-                leftSky.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft);
-                rightSky.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projRight);
+                leftSky.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft4);
+                rightSky.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projRight4);
 
                 HmdMatrix44_t projLeft5 = vrSystem.GetProjectionMatrix(EVREye.Eye_Left, leftStars.nearClipPlane, leftStars.farClipPlane);
                 HmdMatrix44_t projRight5 = vrSystem.GetProjectionMatrix(EVREye.Eye_Right, rightStars.nearClipPlane, rightStars.farClipPlane);
 
-                leftStars.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft);
-                rightStars.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projRight);
+                leftStars.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft5);
+                rightStars.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projRight5);
 
                // camLeft_Interior.depth = 0;
                // camLeft_Interior.clearFlags = CameraClearFlags.Skybox;
