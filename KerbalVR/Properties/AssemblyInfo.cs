@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("KerbalVR")]
+[assembly: AssemblyTitle("KerbinReality")]
 [assembly: AssemblyDescription("Add-on for KSP to enable VR")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Vivero")]
-[assembly: AssemblyProduct("KerbalVR")]
-[assembly: AssemblyCopyright("Copyright © 2016")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("Kerbinreality")]
+[assembly: AssemblyCopyright("Copyright © 2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
