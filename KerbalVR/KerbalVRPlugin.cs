@@ -132,8 +132,8 @@ namespace KerbalVR
                 // Graphics.CopyTexture(r, 0, 0, 0, 0, hmdLeftEyeRenderTexture.width, hmdLeftEyeRenderTexture.height, hmdLeftEyeRenderTexture, 0, 0, 0, 0);
                 //Graphics.CopyTexture(r, 0, 0, difrence, 0, hmdRightEyeRenderTexture.width, hmdRightEyeRenderTexture.height, hmdRightEyeRenderTexture, 0, 0, 0, 0);
                 //   log("cpy");
-                //   Graphics.Blit(r, hmdLeftEyeRenderTexture);
-                //   Graphics.Blit(r, hmdRightEyeRenderTexture);
+                Graphics.Blit(r, hmdLeftEyeRenderTexture);
+                //Graphics.Blit(r, hmdRightEyeRenderTexture);
 
             }
         }
@@ -262,15 +262,15 @@ namespace KerbalVR
                             // foreach (Camera cam in leftCameras)
                             {
                                 
-                                //camLeft_Interior.transform.localRotation = hmdTransform.rot;                                
-                                //camLeft_Interior.transform.localPosition = new Vector3(0f, 0f, 0f);
-                                //camLeft_Interior.transform.Translate(hmdLeftEyeTransform.pos);                                
-                                //camLeft_Interior.transform.localPosition += hmdTransform.pos;
-                                                                
-                                //camRight_Interior.transform.localRotation = hmdTransform.rot;                                
-                                //camRight_Interior.transform.localPosition = new Vector3(0f, 0f, 0f);
-                                //camRight_Interior.transform.Translate(hmdRightEyeTransform.pos);                                
-                                //camRight_Interior.transform.localPosition += hmdTransform.pos;
+                                camLeft_Interior.transform.localRotation = hmdTransform.rot;                                
+                                camLeft_Interior.transform.localPosition = new Vector3(0f, 0f, 0f);
+                                camLeft_Interior.transform.Translate(hmdLeftEyeTransform.pos);                                
+                                camLeft_Interior.transform.localPosition += hmdTransform.pos;
+                                                              
+                                camRight_Interior.transform.localRotation = hmdTransform.rot;                                
+                                camRight_Interior.transform.localPosition = new Vector3(0f, 0f, 0f);
+                                camRight_Interior.transform.Translate(hmdRightEyeTransform.pos);                                
+                                camRight_Interior.transform.localPosition += hmdTransform.pos;
 
 
                                 //right cam
@@ -588,6 +588,7 @@ namespace KerbalVR
                 }
 
             }
+
             if (Input.GetKeyDown(KeyCode.Keypad0) && !HmdOn)
             {
                 activeVessel = FlightGlobals.ActiveVessel;
@@ -711,8 +712,8 @@ namespace KerbalVR
                     }
                 }
 
-             //   camRight_Interior = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
-             //   camLeft_Interior = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
+                camRight_Interior = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
+                camLeft_Interior = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
 
                 camRight_Near = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
                 camLeft_Near = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
@@ -744,11 +745,11 @@ namespace KerbalVR
                 camRight_Near.transform.SetParent(activeVessel.transform);
                 camLeft_Near.transform.SetParent(activeVessel.transform);
 
-           //     camLeft_Interior.CopyFrom(O_Interior);
-           //     camRight_Interior.CopyFrom(O_Interior);
+                camLeft_Interior.CopyFrom(O_Interior);
+                camRight_Interior.CopyFrom(O_Interior);
 
-            //    camLeft_Interior.transform.SetParent(activeVessel.transform);
-            //    camRight_Interior.transform.SetParent(activeVessel.transform);
+                camLeft_Interior.transform.SetParent(activeVessel.transform);
+                camRight_Interior.transform.SetParent(activeVessel.transform);
 
                 camRight_Far.CopyFrom(O_Far);
                 camLeft_Far.CopyFrom(O_Far);
@@ -772,17 +773,17 @@ namespace KerbalVR
                 camLeft_Near.targetTexture = hmdLeftEyeRenderTexture;
                 camRight_Near.targetTexture = hmdRightEyeRenderTexture;
 
-             //   camLeft_Interior.targetTexture = hmdLeftEyeRenderTexture;
-             //   camRight_Interior.targetTexture = hmdRightEyeRenderTexture;
+                camLeft_Interior.targetTexture = hmdLeftEyeRenderTexture;
+                camRight_Interior.targetTexture = hmdRightEyeRenderTexture;
 
 
                 camLeft_Far.targetTexture = hmdLeftEyeRenderTexture;
                 camRight_Far.targetTexture = hmdRightEyeRenderTexture;
 
-                leftStars.depth += 4;
-                leftSky.depth += 4;
-                camLeft_Near.depth += 4;
-                camLeft_Far.depth += 4;
+               // leftStars.depth += 4;
+               // leftSky.depth += 4;
+               // camLeft_Near.depth += 4;
+               // camLeft_Far.depth += 4;
                // camLeft_Interior.depth += 4;
                // camRight_Interior.depth += 4;
                 //rightSky.depth = -5;
@@ -814,7 +815,7 @@ namespace KerbalVR
                 //  camRight.depthTextureMode = DepthTextureMode.Depth;
                 //camRight.transparencySortMode = TransparencySortMode.Perspective;
                 //create left slave
-                leftSlave = camLeft_Near.gameObject.AddOrGetComponent<RenderSlave>();
+                leftSlave = camLeft_Interior.gameObject.AddOrGetComponent<RenderSlave>();
                 //leftSlave = sky.gameObject.AddOrGetComponent<RenderSlave>();
                 leftSlave.left = true;
                 // camLeft.cullingMask = (1 << 0) | (1 << 4) | (1 << 9) | (1 << 10) | (1 << 15) | (1 << 16) | (1 << 18) | (1 << 20) | (1 << 23);
@@ -826,7 +827,7 @@ namespace KerbalVR
                 //camLeft_Near.farClipPlane = max;
 
                 //create right slave
-                rightSlave = camRight_Near.gameObject.AddOrGetComponent<RenderSlave>();
+                rightSlave = camRight_Interior.gameObject.AddOrGetComponent<RenderSlave>();
                 rightSlave.left = false;
                 // camRight.cullingMask = (1 << 0) | (1 << 4) | (1 << 9) | (1 << 10) | (1 << 15) | (1 << 16) | (1 << 18) | (1 << 20) | (1 << 23);
                 //   camRight.cullingMask = (1 << 9) | (1 << 15) | (1 << 16) | (1 << 20) | (1 << 32);
@@ -846,11 +847,11 @@ namespace KerbalVR
                 camLeft_Near.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft);
                 camRight_Near.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projRight);
 
-               // HmdMatrix44_t projLeft2 = vrSystem.GetProjectionMatrix(EVREye.Eye_Left, camLeft_Interior.nearClipPlane, camLeft_Interior.farClipPlane);
-               // HmdMatrix44_t projRight2 = vrSystem.GetProjectionMatrix(EVREye.Eye_Right, camRight_Interior.nearClipPlane, camRight_Interior.farClipPlane);
+                HmdMatrix44_t projLeft2 = vrSystem.GetProjectionMatrix(EVREye.Eye_Left, camLeft_Interior.nearClipPlane, camLeft_Interior.farClipPlane);
+                HmdMatrix44_t projRight2 = vrSystem.GetProjectionMatrix(EVREye.Eye_Right, camRight_Interior.nearClipPlane, camRight_Interior.farClipPlane);
                //
-               // camLeft_Interior.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft2);
-               // camRight_Interior.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projRight2);
+                camLeft_Interior.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft2);
+                camRight_Interior.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projRight2);
 
                 HmdMatrix44_t projLeft3 = vrSystem.GetProjectionMatrix(EVREye.Eye_Left, camLeft_Far.nearClipPlane, camLeft_Far.farClipPlane);
                 HmdMatrix44_t projRight3 = vrSystem.GetProjectionMatrix(EVREye.Eye_Right, camRight_Far.nearClipPlane, camRight_Far.farClipPlane);
@@ -870,35 +871,79 @@ namespace KerbalVR
                 leftStars.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft5);
                 rightStars.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projRight5);
 
-               // camLeft_Interior.depth = 0;
-               // camLeft_Interior.clearFlags = CameraClearFlags.Skybox;
-            //    camLeft_Near.depth = 0;
-            //    camLeft_Near.clearFlags = CameraClearFlags.Nothing;
-            //    camLeft_Far.depth = -1;
-            //    camLeft_Far.clearFlags = CameraClearFlags.Nothing;
-            //    leftSky.depth = -2;
-            //    leftSky.clearFlags = CameraClearFlags.Nothing;
-            //    leftStars.depth = -3;
-            //    leftStars.clearFlags = CameraClearFlags.Skybox;
-            //   //
-            //   // camRight_Interior.depth = 5;
-            //   // camRight_Interior.clearFlags = CameraClearFlags.Skybox;
-            //    camRight_Near.depth =0;
-            //    camRight_Near.clearFlags = CameraClearFlags.Nothing;
-            //    camRight_Far.depth = -1;
-            //    camRight_Far.clearFlags = CameraClearFlags.Nothing;
-            //    rightSky.depth = -2;
-            //    rightSky.clearFlags = CameraClearFlags.Nothing;
-            //    rightStars.depth = -3;
-            //    rightStars.clearFlags = CameraClearFlags.Skybox;
+                //camLeft_Interior.depth = 0;
+                //camLeft_Interior.clearFlags = CameraClearFlags.Skybox;
+                camLeft_Near.depth = 0;
+                // camLeft_Near.clearFlags = CameraClearFlags.Depth;
+                camLeft_Far.depth = -1;
+                // camLeft_Far.clearFlags = CameraClearFlags.Depth;
+                leftSky.depth = 4;
+                // leftSky.clearFlags = CameraClearFlags.Depth;
+                leftStars.depth = 3;
+                // leftStars.clearFlags = CameraClearFlags.Depth;
+                //
+                //camRight_Interior.depth = 0-5;
+                //camRight_Interior.clearFlags = CameraClearFlags.Skybox;
+                camRight_Near.depth = 0 - 5;
+                //  camRight_Near.clearFlags = CameraClearFlags.Depth;
+                camRight_Far.depth = -1 - 5;
+                //  camRight_Far.clearFlags = CameraClearFlags.Depth;
+                rightSky.depth = 4 - 5;
+                //  rightSky.clearFlags = CameraClearFlags.Depth;
+                rightStars.depth = 3 - 5;
+                //   rightStars.clearFlags = CameraClearFlags.Depth;
 
+
+                O_SclaledSpace.enabled = false;
+                O_Galaxy.enabled = false;
+                O_Near.enabled = false;
+                O_Far.enabled = false;
+                O_Interior.enabled = false;
+
+                camLeft_Near.enabled = false;
+                camRight_Near.enabled = false;
+
+                camLeft_Far.enabled = false;
+                camRight_Far.enabled = false;
+
+                leftSky.enabled = false;
+                rightSky.enabled = false;
+
+                leftStars.enabled = false;
+                rightStars.enabled = false;
+
+                camLeft_Interior.enabled = false;
+                camRight_Interior.enabled = false;
 
                 //activate slaves
                 posTracker.HmdOn = true;
                 leftSlave.HmdOn = true;
                 rightSlave.HmdOn = true;
 
+                
+            }
+            if (HmdOn)
+            {
+                //leftStars.Render();
+                rightStars.Render();
 
+                //leftSky.Render();
+                rightSky.Render();
+
+                Graphics.CopyTexture(hmdRightEyeRenderTexture, hmdLeftEyeRenderTexture);
+
+                
+
+
+
+                camLeft_Far.Render();
+                camRight_Far.Render();
+
+                camLeft_Near.Render();
+                camRight_Near.Render();
+
+                camLeft_Interior.Render();
+                camRight_Interior.Render();
             }
         }
 
