@@ -20,6 +20,8 @@ namespace KerbalVR
 
         static copySlave skyCopySlave;
 
+        static Kerbal activeKerbal = null;
+        static int lastKerbalID = -1;
 
         public static List<Camera> leftCameras = new List<Camera>();
         public static List<Camera> rightCameras = new List<Camera>();
@@ -233,6 +235,20 @@ namespace KerbalVR
                     //   log("get");
                     lock (KerbalVRPlugin.hmdRightEyeRenderTexture) lock (KerbalVRPlugin.hmdLeftEyeRenderTexture)
                         {
+                            if (CameraManager.Instance.IVACameraActiveKerbalIndex != lastKerbalID)
+                            {
+                                //reenable last kerbal
+                                activeKerbal.SetVisibleInPortrait(true);
+                                activeKerbal.gameObject.active = true;
+
+                                activeKerbal = CameraManager.Instance.IVACameraActiveKerbal;
+                                lastKerbalID = CameraManager.Instance.IVACameraActiveKerbalIndex;
+
+                                //deactivate curent kerbal
+                                 activeKerbal.SetVisibleInPortrait(false);
+                                activeKerbal.gameObject.active = false;
+                            }
+
                             //   log("getLOCK");
                             gotPoses = true;
 
@@ -481,6 +497,8 @@ namespace KerbalVR
                 log("         ScaledCamera rot = " + ScaledCamera.Instance.transform.rotation.eulerAngles.ToString());
 
             }
+
+
 
             if (HmdOn)
             {
@@ -918,7 +936,10 @@ namespace KerbalVR
                 leftSlave.HmdOn = true;
                 rightSlave.HmdOn = true;
 
-                
+                //initialize active kerbal:
+                activeKerbal = CameraManager.Instance.IVACameraActiveKerbal;
+                lastKerbalID = CameraManager.Instance.IVACameraActiveKerbalIndex;
+
             }
             if (HmdOn)
             {
