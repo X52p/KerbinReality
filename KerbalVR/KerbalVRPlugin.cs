@@ -27,7 +27,7 @@ namespace KerbalVR
         public static List<GameObject> allCamerasGameObject = new List<GameObject>();
 
         public bool left = false;
-
+        int eyeDiference = 100; //TODO calculate corectly
 
 
         private static object mutex = new object();
@@ -125,7 +125,6 @@ namespace KerbalVR
         {
             // public RenderTexture leftTarget, rightTarget;
             public float u, v;
-            public int difrence;
 
             void OnRenderImage(RenderTexture r, RenderTexture r2)
             {
@@ -261,20 +260,23 @@ namespace KerbalVR
 
                             // foreach (Camera cam in leftCameras)
                             {
-                                
-                                camLeft_Interior.transform.localRotation = hmdTransform.rot;                                
+                                hmdTransform.rot = (O_Interior.transform.rotation) * hmdTransform.rot;
+                                hmdTransform.pos = (O_Interior.transform.rotation) * hmdTransform.pos + O_Interior.transform.position;
+
+                                camLeft_Interior.transform.localRotation = hmdTransform.rot;
                                 camLeft_Interior.transform.localPosition = new Vector3(0f, 0f, 0f);
-                                camLeft_Interior.transform.Translate(hmdLeftEyeTransform.pos);                                
+                                camLeft_Interior.transform.Translate(hmdLeftEyeTransform.pos);
                                 camLeft_Interior.transform.localPosition += hmdTransform.pos;
                                                               
-                                camRight_Interior.transform.localRotation = hmdTransform.rot;                                
+                                camRight_Interior.transform.localRotation = hmdTransform.rot;
                                 camRight_Interior.transform.localPosition = new Vector3(0f, 0f, 0f);
-                                camRight_Interior.transform.Translate(hmdRightEyeTransform.pos);                                
+                                camRight_Interior.transform.Translate(hmdRightEyeTransform.pos);
                                 camRight_Interior.transform.localPosition += hmdTransform.pos;
 
+                                //
 
                                 //right cam
-                                camLeft_Near.transform.localRotation = hmdTransform.rot;
+                                camLeft_Near.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
                                 //camRight.transform.RotateAround(new Vector3(0, 0, 0), new Vector3(1, 0, 0), -90);
 
                                 // translate the camera to match the position of the left eye, from origin
@@ -282,10 +284,10 @@ namespace KerbalVR
                                 camLeft_Near.transform.Translate(hmdLeftEyeTransform.pos);
 
                                 // translate the camera to match the position of the HMD
-                                camLeft_Near.transform.localPosition += hmdTransform.pos;
+                                camLeft_Near.transform.localPosition += InternalSpace.InternalToWorld(hmdTransform.pos);
 
                                 //right cam
-                                camRight_Near.transform.localRotation = hmdTransform.rot;
+                                camRight_Near.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
                                 //camRight.transform.RotateAround(new Vector3(0, 0, 0), new Vector3(1, 0, 0), -90);
 
                                 // translate the camera to match the position of the left eye, from origin
@@ -293,9 +295,9 @@ namespace KerbalVR
                                 camRight_Near.transform.Translate(hmdRightEyeTransform.pos);
 
                                 // translate the camera to match the position of the HMD
-                                camRight_Near.transform.localPosition += hmdTransform.pos;
+                                camRight_Near.transform.localPosition += InternalSpace.InternalToWorld(hmdTransform.pos);
 
-                                camLeft_Far.transform.localRotation = hmdTransform.rot;
+                                camLeft_Far.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
                                 //camRight.transform.RotateAround(new Vector3(0, 0, 0), new Vector3(1, 0, 0), -90);
 
                                 // translate the camera to match the position of the left eye, from origin
@@ -303,9 +305,8 @@ namespace KerbalVR
                                 camLeft_Far.transform.Translate(hmdLeftEyeTransform.pos);
 
                                 // translate the camera to match the position of the HMD
-                                camLeft_Far.transform.localPosition += hmdTransform.pos;
-
-                                camRight_Far.transform.localRotation = hmdTransform.rot;
+                                camLeft_Far.transform.localPosition += InternalSpace.InternalToWorld(hmdTransform.pos);
+                                camRight_Far.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
                                 //camRight.transform.RotateAround(new Vector3(0, 0, 0), new Vector3(1, 0, 0), -90);
 
                                 // translate the camera to match the position of the left eye, from origin
@@ -313,29 +314,29 @@ namespace KerbalVR
                                 camRight_Far.transform.Translate(hmdRightEyeTransform.pos);
 
                                 // translate the camera to match the position of the HMD
-                                camRight_Far.transform.localPosition += hmdTransform.pos;
+                                camRight_Far.transform.localPosition += InternalSpace.InternalToWorld(hmdTransform.pos);
 
 
-                                leftSky.transform.localRotation = hmdTransform.rot;
+                                leftSky.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
                                 leftSky.transform.localPosition = new Vector3(0f, 0f, 0f);
-                                leftSky.transform.Translate(hmdLeftEyeTransform.pos);
-                                leftSky.transform.localPosition += hmdTransform.pos;
+                                leftSky.transform.Translate(hmdLeftEyeTransform.pos * ScaledSpace.InverseScaleFactor);
+                                leftSky.transform.localPosition += (hmdTransform.pos * ScaledSpace.InverseScaleFactor);
 
-                                rightSky.transform.localRotation = hmdTransform.rot;
+                                rightSky.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
                                 rightSky.transform.localPosition = new Vector3(0f, 0f, 0f);
-                                rightSky.transform.Translate(hmdRightEyeTransform.pos);
-                                rightSky.transform.localPosition += hmdTransform.pos;
+                                rightSky.transform.Translate(hmdRightEyeTransform.pos * ScaledSpace.InverseScaleFactor);
+                                rightSky.transform.localPosition += (hmdTransform.pos * ScaledSpace.InverseScaleFactor);
 
-                                leftStars.transform.localRotation = hmdTransform.rot;
+                                leftStars.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
                                 leftStars.transform.localPosition = new Vector3(0f, 0f, 0f);
-                                leftStars.transform.Translate(hmdLeftEyeTransform.pos);
-                                leftStars.transform.localPosition += hmdTransform.pos;
+                                leftStars.transform.Translate(hmdLeftEyeTransform.pos* ScaledSpace.InverseScaleFactor);
+                                leftStars.transform.localPosition += InternalSpace.InternalToWorld(hmdTransform.pos* ScaledSpace.InverseScaleFactor);
 
-                                rightStars.transform.localRotation = hmdTransform.rot;
+                                rightStars.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
                                 rightStars.transform.localPosition = new Vector3(0f, 0f, 0f);
-                                rightStars.transform.Translate(hmdRightEyeTransform.pos);
-                                rightStars.transform.localPosition += hmdTransform.pos;
-
+                                rightStars.transform.Translate(hmdRightEyeTransform.pos* ScaledSpace.InverseScaleFactor);
+                                rightStars.transform.localPosition += InternalSpace.InternalToWorld(hmdTransform.pos* ScaledSpace.InverseScaleFactor);
+                                
                                 //GalaxyCubeControl.Instance.transform.rotation = hmdTransform
 
                                 //  sky.transform.position = ScaledSpace.Instance.transform.position;
@@ -632,9 +633,10 @@ namespace KerbalVR
 
 
 
-                int widthDiference = (int)(Camera.main.WorldToScreenPoint(new Utils.RigidTransform(vrLeftEyeTransform).pos) - Camera.main.WorldToScreenPoint(new Utils.RigidTransform(vrRightEyeTransform).pos)).magnitude;
-                widthDiference = 100; //TODO calculate corectly
-                skyTexture = new RenderTexture((int)(renderTextureWidth + widthDiference), (int)renderTextureHeight, 24, RenderTextureFormat.ARGB32);
+                eyeDiference = (int)(Camera.main.WorldToScreenPoint(new Utils.RigidTransform(vrLeftEyeTransform).pos) - Camera.main.WorldToScreenPoint(new Utils.RigidTransform(vrRightEyeTransform).pos)).magnitude;
+                eyeDiference = 0;
+
+                skyTexture = new RenderTexture((int)(renderTextureWidth + eyeDiference), (int)renderTextureHeight, 24, RenderTextureFormat.ARGB32);
                 skyTexture.Create();
 
                 hmdLeftEyeRenderTexture = new RenderTexture((int)renderTextureWidth, (int)renderTextureHeight, 24, RenderTextureFormat.ARGB32);
@@ -729,33 +731,27 @@ namespace KerbalVR
 
                 leftSky.CopyFrom(O_SclaledSpace);
                 rightSky.CopyFrom(O_SclaledSpace);
-
-                leftSky.transform.SetParent(activeVessel.transform);
-                rightSky.transform.SetParent(activeVessel.transform);
-
                 leftStars.CopyFrom(O_Galaxy);
                 rightStars.CopyFrom(O_Galaxy);
-
-                leftStars.transform.SetParent(activeVessel.transform);
-                rightStars.transform.SetParent(activeVessel.transform);
-
                 camRight_Near.CopyFrom(O_Near);
                 camLeft_Near.CopyFrom(O_Near);
-
-                camRight_Near.transform.SetParent(activeVessel.transform);
-                camLeft_Near.transform.SetParent(activeVessel.transform);
-
                 camLeft_Interior.CopyFrom(O_Interior);
                 camRight_Interior.CopyFrom(O_Interior);
-
-                camLeft_Interior.transform.SetParent(activeVessel.transform);
-                camRight_Interior.transform.SetParent(activeVessel.transform);
-
                 camRight_Far.CopyFrom(O_Far);
                 camLeft_Far.CopyFrom(O_Far);
 
-                camRight_Far.transform.SetParent(activeVessel.transform);
-                camLeft_Far.transform.SetParent(activeVessel.transform);
+                //leftSky.transform.SetParent(activeVessel.transform);
+                //rightSky.transform.SetParent(activeVessel.transform);
+                //leftStars.transform.SetParent(activeVessel.transform);
+                //rightStars.transform.SetParent(activeVessel.transform);
+                //camRight_Near.transform.SetParent(activeVessel.transform);
+                //camLeft_Near.transform.SetParent(activeVessel.transform);
+                //camLeft_Interior.transform.SetParent(activeVessel.transform);
+                //camRight_Interior.transform.SetParent(activeVessel.transform);
+                //camRight_Far.transform.SetParent(activeVessel.transform);
+                //camLeft_Far.transform.SetParent(activeVessel.transform);
+
+
                 // stars.clearFlags = CameraClearFlags.Depth;
                 // stars.cullingMask = (1 << 18);
                 //sky.cullingMask = (1 << 9);
@@ -915,6 +911,8 @@ namespace KerbalVR
                 camLeft_Interior.enabled = false;
                 camRight_Interior.enabled = false;
 
+
+                
                 //activate slaves
                 posTracker.HmdOn = true;
                 leftSlave.HmdOn = true;
@@ -924,20 +922,29 @@ namespace KerbalVR
             }
             if (HmdOn)
             {
-                //leftStars.Render();
+                leftStars.Render();
                 rightStars.Render();
 
-                //leftSky.Render();
+                leftSky.Render();
                 rightSky.Render();
 
-                Graphics.CopyTexture(hmdRightEyeRenderTexture, hmdLeftEyeRenderTexture);
+              //  Graphics.CopyTexture(hmdRightEyeRenderTexture, hmdLeftEyeRenderTexture);
 
-                
+                int xstart = 0;
+                int ystart = 0;
+                int width = hmdLeftEyeRenderTexture.width;
+                int height = hmdLeftEyeRenderTexture.height;
+                int destX = 0;
+                int destY = 0;
+               
 
 
 
                 camLeft_Far.Render();
                 camRight_Far.Render();
+
+               // Graphics.CopyTexture(skyTexture, 0, 0, xstart + eyeDiference, ystart, width, height, hmdLeftEyeRenderTexture, 0, 0, destX, destY);
+               // Graphics.CopyTexture(skyTexture, 0, 0, xstart, ystart, width, height, hmdRightEyeRenderTexture, 0, 0, destX, destY);
 
                 camLeft_Near.Render();
                 camRight_Near.Render();
