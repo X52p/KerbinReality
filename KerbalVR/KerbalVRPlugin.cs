@@ -18,8 +18,6 @@ namespace KerbalVR
         static RenderSlave leftSlave;
         static RenderSlave rightSlave;
 
-        static copySlave skyCopySlave;
-
         static Kerbal activeKerbal = null;
         static int lastKerbalID = -1;
 
@@ -29,7 +27,6 @@ namespace KerbalVR
         public static List<GameObject> allCamerasGameObject = new List<GameObject>();
 
         public bool left = false;
-        int eyeDiference = 100; //TODO calculate corectly
 
 
         private static object mutex = new object();
@@ -40,19 +37,14 @@ namespace KerbalVR
         public static Camera leftSky, leftStars, rightSky, rightStars;
         public static Camera O_SclaledSpace, O_Galaxy, O_Near, O_Far, O_Interior;
 
-        public static List<GameObject> interiorModelList;
-
         public static bool leftReady = false;
         public static bool rightReady = false;
-
-        private bool renderToScreen = true;
 
         private static CVRSystem vrSystem;
         private static CVRCompositor vrCompositor;
 
         private static RenderTexture hmdLeftEyeRenderTexture, hmdRightEyeRenderTexture, skyTexture;
-
-
+        
 
         private VRControllerState_t ctrlStateLeft = new VRControllerState_t();
         private VRControllerState_t ctrlStateRight = new VRControllerState_t();
@@ -60,9 +52,6 @@ namespace KerbalVR
 
 
         public static Texture_t hmdLeftEyeTexture, hmdRightEyeTexture;
-
-        private Texture2D myTexture2D;
-
 
 
         private System.Timers.Timer initTmr = new System.Timers.Timer(1000);
@@ -121,23 +110,9 @@ namespace KerbalVR
 
         private uint ctrlIndexLeft = 0;
         private uint ctrlIndexRight = 0;
+
+        //how far into the future the Hmd position will be predicted
         public static float predict = 0.05f;
-
-        private class copySlave : MonoBehaviour
-        {
-            // public RenderTexture leftTarget, rightTarget;
-            public float u, v;
-
-            void OnRenderImage(RenderTexture r, RenderTexture r2)
-            {
-                // Graphics.CopyTexture(r, 0, 0, 0, 0, hmdLeftEyeRenderTexture.width, hmdLeftEyeRenderTexture.height, hmdLeftEyeRenderTexture, 0, 0, 0, 0);
-                //Graphics.CopyTexture(r, 0, 0, difrence, 0, hmdRightEyeRenderTexture.width, hmdRightEyeRenderTexture.height, hmdRightEyeRenderTexture, 0, 0, 0, 0);
-                //   log("cpy");
-                Graphics.Blit(r, hmdLeftEyeRenderTexture);
-                //Graphics.Blit(r, hmdRightEyeRenderTexture);
-
-            }
-        }
 
         private class RenderSlave : MonoBehaviour
         {
@@ -166,12 +141,9 @@ namespace KerbalVR
                 {
                     EVRCompositorError vrCompositorError = EVRCompositorError.None;
                     if (left && !leftReady)
-                    {
-                        //       log("left");
+                    {                        
                         lock (KerbalVRPlugin.hmdRightEyeRenderTexture) lock (KerbalVRPlugin.hmdLeftEyeRenderTexture) lock (r) lock (vrCompositor)
                                     {
-                                        //             log("leftLOCK");
-                                        //         log("left");
                                         hmdLeftEyeTexture.handle = r.GetNativeTexturePtr();
 
                                         vrCompositorError = vrCompositor.Submit(EVREye.Eye_Left, ref hmdLeftEyeTexture, ref hmdTextureBounds, EVRSubmitFlags.Submit_Default);
@@ -186,10 +158,8 @@ namespace KerbalVR
                     }
                     else if (!rightReady)
                     {
-                        //     log("right");
                         lock (KerbalVRPlugin.hmdRightEyeRenderTexture) lock (KerbalVRPlugin.hmdLeftEyeRenderTexture) lock (r) lock (vrCompositor)
                                     {
-                                        //              log("rightLOCK");
                                         hmdRightEyeTexture.handle = r.GetNativeTexturePtr();
 
                                         vrCompositorError = vrCompositor.Submit(EVREye.Eye_Right, ref hmdRightEyeTexture, ref hmdTextureBounds, EVRSubmitFlags.Submit_Default);
@@ -225,16 +195,13 @@ namespace KerbalVR
             private static Utils.RigidTransform ctrlPoseLeft;
             private static Utils.RigidTransform ctrlPoseRight;
 
-
-            private static Utils.RigidTransform lastTransform;
             void OnPreRender()
             {
-                //   log("pre");
                 if (!gotPoses && HmdOn)
                 {
-                    //   log("get");
                     lock (KerbalVRPlugin.hmdRightEyeRenderTexture) lock (KerbalVRPlugin.hmdLeftEyeRenderTexture)
                         {
+                            //check if active kerbal changed
                             if (CameraManager.Instance.IVACameraActiveKerbalIndex != lastKerbalID)
                             {
                                 //reenable last kerbal
@@ -249,11 +216,11 @@ namespace KerbalVR
                                 activeKerbal.gameObject.active = false;
                             }
 
-                            //   log("getLOCK");
                             gotPoses = true;
-
+                            
                             EVRCompositorError vrCompositorError = EVRCompositorError.None;
 
+                            //get poses from VR api
                             vrSystem.GetDeviceToAbsoluteTrackingPose(ETrackingUniverseOrigin.TrackingUniverseSeated, predict, vrDevicePoses);
                             HmdMatrix34_t vrLeftEyeTransform = vrSystem.GetEyeToHeadTransform(EVREye.Eye_Left);
                             HmdMatrix34_t vrRightEyeTransform = vrSystem.GetEyeToHeadTransform(EVREye.Eye_Right);
@@ -266,95 +233,76 @@ namespace KerbalVR
                             }
 
                             // convert SteamVR poses to Unity coordinates
-
                             hmdTransform = new Utils.RigidTransform(vrDevicePoses[OpenVR.k_unTrackedDeviceIndex_Hmd].mDeviceToAbsoluteTracking);
                             hmdLeftEyeTransform = new Utils.RigidTransform(vrLeftEyeTransform);
                             hmdRightEyeTransform = new Utils.RigidTransform(vrRightEyeTransform);
                             ctrlPoseLeft = new Utils.RigidTransform(vrDevicePoses[ctrlIndexLeft].mDeviceToAbsoluteTracking);
                             ctrlPoseRight = new Utils.RigidTransform(vrDevicePoses[ctrlIndexRight].mDeviceToAbsoluteTracking);
-                            //     log(hmdTransform.pos.ToString());
 
-                            // foreach (Camera cam in leftCameras)
-                            {
-                                hmdTransform.rot = (O_Interior.transform.rotation) * hmdTransform.rot;
-                                hmdTransform.pos = (O_Interior.transform.rotation) * hmdTransform.pos + O_Interior.transform.position;
+                           
+                            //calculate corect position acording to vessel orientation
+                            hmdTransform.rot = (O_Interior.transform.rotation) * hmdTransform.rot;
+                            hmdTransform.pos = (O_Interior.transform.rotation) * hmdTransform.pos + O_Interior.transform.position;
 
-                                camLeft_Interior.transform.localRotation = hmdTransform.rot;
-                                camLeft_Interior.transform.localPosition = new Vector3(0f, 0f, 0f);
-                                camLeft_Interior.transform.Translate(hmdLeftEyeTransform.pos);
-                                camLeft_Interior.transform.localPosition += hmdTransform.pos;
-                                                              
-                                camRight_Interior.transform.localRotation = hmdTransform.rot;
-                                camRight_Interior.transform.localPosition = new Vector3(0f, 0f, 0f);
-                                camRight_Interior.transform.Translate(hmdRightEyeTransform.pos);
-                                camRight_Interior.transform.localPosition += hmdTransform.pos;
+                            //shema:
+                            //rotate Camera acording to Hmd rotation
+                            //reset local position
+                            //set new local position acording to eye position
+                            //add position of hmd
 
-                                //
+                            //internal camera has no special transformations
+                            camLeft_Interior.transform.localRotation = hmdTransform.rot;
+                            camLeft_Interior.transform.localPosition = new Vector3(0f, 0f, 0f);
+                            camLeft_Interior.transform.Translate(hmdLeftEyeTransform.pos);
+                            camLeft_Interior.transform.localPosition += hmdTransform.pos;
+                                                          
+                            camRight_Interior.transform.localRotation = hmdTransform.rot;
+                            camRight_Interior.transform.localPosition = new Vector3(0f, 0f, 0f);
+                            camRight_Interior.transform.Translate(hmdRightEyeTransform.pos);
+                            camRight_Interior.transform.localPosition += hmdTransform.pos;
 
-                                //right cam
-                                camLeft_Near.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
-                                //camRight.transform.RotateAround(new Vector3(0, 0, 0), new Vector3(1, 0, 0), -90);
+                            //rotations and positions for all following cameras are converted from internal to wolrd space:
+                            camLeft_Near.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
+                            camLeft_Near.transform.localPosition = new Vector3(0f, 0f, 0f);
+                            camLeft_Near.transform.Translate(hmdLeftEyeTransform.pos);
+                            camLeft_Near.transform.localPosition += InternalSpace.InternalToWorld(hmdTransform.pos);
 
-                                // translate the camera to match the position of the left eye, from origin
-                                camLeft_Near.transform.localPosition = new Vector3(0f, 0f, 0f);
-                                camLeft_Near.transform.Translate(hmdLeftEyeTransform.pos);
+                            camRight_Near.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
+                            camRight_Near.transform.localPosition = new Vector3(0f, 0f, 0f);
+                            camRight_Near.transform.Translate(hmdRightEyeTransform.pos);
+                            camRight_Near.transform.localPosition += InternalSpace.InternalToWorld(hmdTransform.pos);
 
-                                // translate the camera to match the position of the HMD
-                                camLeft_Near.transform.localPosition += InternalSpace.InternalToWorld(hmdTransform.pos);
+                            camLeft_Far.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
+                            camLeft_Far.transform.localPosition = new Vector3(0f, 0f, 0f);
+                            camLeft_Far.transform.Translate(hmdLeftEyeTransform.pos);
+                            camLeft_Far.transform.localPosition += InternalSpace.InternalToWorld(hmdTransform.pos);
 
-                                //right cam
-                                camRight_Near.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
-                                //camRight.transform.RotateAround(new Vector3(0, 0, 0), new Vector3(1, 0, 0), -90);
+                            camRight_Far.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
+                            camRight_Far.transform.localPosition = new Vector3(0f, 0f, 0f);
+                            camRight_Far.transform.Translate(hmdRightEyeTransform.pos);
+                            camRight_Far.transform.localPosition += InternalSpace.InternalToWorld(hmdTransform.pos);
 
-                                // translate the camera to match the position of the left eye, from origin
-                                camRight_Near.transform.localPosition = new Vector3(0f, 0f, 0f);
-                                camRight_Near.transform.Translate(hmdRightEyeTransform.pos);
+                            //the sky and star Cameras are in ScaledSpace so the vectors have to be scaled down
+                            leftSky.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
+                            leftSky.transform.localPosition = new Vector3(0f, 0f, 0f);
+                            leftSky.transform.Translate(hmdLeftEyeTransform.pos * ScaledSpace.InverseScaleFactor);
+                            leftSky.transform.localPosition += (hmdTransform.pos * ScaledSpace.InverseScaleFactor);
 
-                                // translate the camera to match the position of the HMD
-                                camRight_Near.transform.localPosition += InternalSpace.InternalToWorld(hmdTransform.pos);
+                            rightSky.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
+                            rightSky.transform.localPosition = new Vector3(0f, 0f, 0f);
+                            rightSky.transform.Translate(hmdRightEyeTransform.pos * ScaledSpace.InverseScaleFactor);
+                            rightSky.transform.localPosition += (hmdTransform.pos * ScaledSpace.InverseScaleFactor);
 
-                                camLeft_Far.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
-                                //camRight.transform.RotateAround(new Vector3(0, 0, 0), new Vector3(1, 0, 0), -90);
+                            leftStars.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
+                            leftStars.transform.localPosition = new Vector3(0f, 0f, 0f);
+                            leftStars.transform.Translate(hmdLeftEyeTransform.pos* ScaledSpace.InverseScaleFactor);
+                            leftStars.transform.localPosition += InternalSpace.InternalToWorld(hmdTransform.pos* ScaledSpace.InverseScaleFactor);
 
-                                // translate the camera to match the position of the left eye, from origin
-                                camLeft_Far.transform.localPosition = new Vector3(0f, 0f, 0f);
-                                camLeft_Far.transform.Translate(hmdLeftEyeTransform.pos);
-
-                                // translate the camera to match the position of the HMD
-                                camLeft_Far.transform.localPosition += InternalSpace.InternalToWorld(hmdTransform.pos);
-                                camRight_Far.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
-                                //camRight.transform.RotateAround(new Vector3(0, 0, 0), new Vector3(1, 0, 0), -90);
-
-                                // translate the camera to match the position of the left eye, from origin
-                                camRight_Far.transform.localPosition = new Vector3(0f, 0f, 0f);
-                                camRight_Far.transform.Translate(hmdRightEyeTransform.pos);
-
-                                // translate the camera to match the position of the HMD
-                                camRight_Far.transform.localPosition += InternalSpace.InternalToWorld(hmdTransform.pos);
-
-
-                                leftSky.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
-                                leftSky.transform.localPosition = new Vector3(0f, 0f, 0f);
-                                leftSky.transform.Translate(hmdLeftEyeTransform.pos * ScaledSpace.InverseScaleFactor);
-                                leftSky.transform.localPosition += (hmdTransform.pos * ScaledSpace.InverseScaleFactor);
-
-                                rightSky.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
-                                rightSky.transform.localPosition = new Vector3(0f, 0f, 0f);
-                                rightSky.transform.Translate(hmdRightEyeTransform.pos * ScaledSpace.InverseScaleFactor);
-                                rightSky.transform.localPosition += (hmdTransform.pos * ScaledSpace.InverseScaleFactor);
-
-                                leftStars.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
-                                leftStars.transform.localPosition = new Vector3(0f, 0f, 0f);
-                                leftStars.transform.Translate(hmdLeftEyeTransform.pos* ScaledSpace.InverseScaleFactor);
-                                leftStars.transform.localPosition += InternalSpace.InternalToWorld(hmdTransform.pos* ScaledSpace.InverseScaleFactor);
-
-                                rightStars.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
-                                rightStars.transform.localPosition = new Vector3(0f, 0f, 0f);
-                                rightStars.transform.Translate(hmdRightEyeTransform.pos* ScaledSpace.InverseScaleFactor);
-                                rightStars.transform.localPosition += InternalSpace.InternalToWorld(hmdTransform.pos* ScaledSpace.InverseScaleFactor);
-
-                                lastTransform = hmdTransform;
-                            }
+                            rightStars.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
+                            rightStars.transform.localPosition = new Vector3(0f, 0f, 0f);
+                            rightStars.transform.Translate(hmdRightEyeTransform.pos* ScaledSpace.InverseScaleFactor);
+                            rightStars.transform.localPosition += InternalSpace.InternalToWorld(hmdTransform.pos* ScaledSpace.InverseScaleFactor);
+                            
                         }
                 }
             }
@@ -386,10 +334,6 @@ namespace KerbalVR
             //cameraNamesToRender.Add(cameraNames[6]); // don't render UI, it looks shitty
 
             camerasToRender = new List<CameraProperties>(cameraNamesToRender.Count);
-
-            interiorModelList = new List<GameObject>();
-
-
         }
 
 
@@ -446,11 +390,10 @@ namespace KerbalVR
 
 
 
-                eyeDiference = (int)(Camera.main.WorldToScreenPoint(new Utils.RigidTransform(vrLeftEyeTransform).pos) - Camera.main.WorldToScreenPoint(new Utils.RigidTransform(vrRightEyeTransform).pos)).magnitude;
-                eyeDiference = 0;
+                //eyeDiference = (int)(Camera.main.WorldToScreenPoint(new Utils.RigidTransform(vrLeftEyeTransform).pos) - Camera.main.WorldToScreenPoint(new Utils.RigidTransform(vrRightEyeTransform).pos)).magnitude;
 
-                skyTexture = new RenderTexture((int)(renderTextureWidth + eyeDiference), (int)renderTextureHeight, 24, RenderTextureFormat.ARGB32);
-                skyTexture.Create();
+                // skyTexture = new RenderTexture((int)(renderTextureWidth + eyeDiference), (int)renderTextureHeight, 24, RenderTextureFormat.ARGB32);
+                // skyTexture.Create();
 
                 hmdLeftEyeRenderTexture = new RenderTexture((int)renderTextureWidth, (int)renderTextureHeight, 24, RenderTextureFormat.ARGB32);
                 hmdLeftEyeRenderTexture.Create();
