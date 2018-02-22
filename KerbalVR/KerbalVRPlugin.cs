@@ -84,7 +84,7 @@ namespace KerbalVR
         };
 
         // list of cameras to render (string names), defined on Start()
-        private List<string> cameraNamesToRender;
+        static List<string> cameraNamesToRender;
 
         // struct to keep track of Camera properties
         private struct CameraProperties
@@ -201,7 +201,13 @@ namespace KerbalVR
             {
                 if (!gotPoses && HmdOn)
                 {
-                    lock (KerbalVRPlugin.hmdRightEyeRenderTexture) lock (KerbalVRPlugin.hmdLeftEyeRenderTexture)
+                    Part hoveredPart = Mouse.HoveredPart;
+                    if (hoveredPart != null)
+                    {
+                        hoveredPart.HighlightActive = false;
+                    }
+
+                        lock (KerbalVRPlugin.hmdRightEyeRenderTexture) lock (KerbalVRPlugin.hmdLeftEyeRenderTexture)
                         {                           
                             //check if active kerbal changed
                             if (CameraManager.Instance.currentCameraMode.Equals(CameraManager.CameraMode.IVA) && CameraManager.Instance.IVACameraActiveKerbalIndex != lastKerbalID)
@@ -304,8 +310,7 @@ namespace KerbalVR
                             rightStars.transform.localRotation = InternalSpace.InternalToWorld(hmdTransform.rot);
                             rightStars.transform.localPosition = new Vector3(0f, 0f, 0f);
                             rightStars.transform.Translate(hmdRightEyeTransform.pos* ScaledSpace.InverseScaleFactor);
-                            rightStars.transform.localPosition += InternalSpace.InternalToWorld(hmdTransform.pos* ScaledSpace.InverseScaleFactor);
-                            
+                            rightStars.transform.localPosition += InternalSpace.InternalToWorld(hmdTransform.pos* ScaledSpace.InverseScaleFactor);                            
                         }
                 }
             }
@@ -339,14 +344,23 @@ namespace KerbalVR
             camerasToRender = new List<CameraProperties>(cameraNamesToRender.Count);
         }
 
+        
 
         bool HmdOn = false;
         bool master = true;
 
         private WaitForEndOfFrame waitForEndOfFrame = new WaitForEndOfFrame();
 
+        public void onVesselChange(Vessel v)
+        {
+            new WaitForEndOfFrame();
+            this.gameObject.AddComponent<KerbalVRPlugin>();
+            Destroy(this);
+        }
+
         void Update()
         {
+            
 
             //increase prediction
             if (Input.GetKeyDown(KeyCode.KeypadPlus))
@@ -385,9 +399,7 @@ namespace KerbalVR
                 vrSystem.GetRecommendedRenderTargetSize(ref renderTextureWidth, ref renderTextureHeight);
 
                 HmdMatrix34_t vrLeftEyeTransform = vrSystem.GetEyeToHeadTransform(EVREye.Eye_Left);
-                HmdMatrix34_t vrRightEyeTransform = vrSystem.GetEyeToHeadTransform(EVREye.Eye_Right);
-
-
+                HmdMatrix34_t vrRightEyeTransform = vrSystem.GetEyeToHeadTransform(EVREye.Eye_Right);                
 
                 //eyeDiference = (int)(Camera.main.WorldToScreenPoint(new Utils.RigidTransform(vrLeftEyeTransform).pos) - Camera.main.WorldToScreenPoint(new Utils.RigidTransform(vrRightEyeTransform).pos)).magnitude;
 
@@ -400,170 +412,10 @@ namespace KerbalVR
                 hmdRightEyeRenderTexture = new RenderTexture((int)renderTextureWidth, (int)renderTextureHeight, 24, RenderTextureFormat.ARGB32);
                 hmdRightEyeRenderTexture.Create();
 
-                float max = 0;
+                setupCameras();
 
-                float[] distances = new float[32];
-
-                foreach (string cameraName in cameraNamesToRender)
-                {
-                    foreach (Camera camera in Camera.allCameras)
-                    {
-                        if (cameraName.Equals(camera.name))
-                        {
-                            switch (camera.name)
-                            {
-                                case "GalaxyCamera":
-                                    O_Galaxy = camera;
-                                    break;
-                                case "Camera ScaledSpace":
-                                    O_SclaledSpace = camera;
-                                    break;
-                                case "Camera 01":
-                                    O_Far = camera;
-                                    break;
-                                case "Camera 00":
-                                    O_Near = camera;
-                                    break;
-                                default:
-                                    break;
-                            }
-
-
-                            camera.gameObject.AddOrGetComponent<posTracker>();
-
-                            log("Camera:");
-                            log("  Name:  " + camera.name);
-                            log("  mask:  " + Convert.ToString(camera.cullingMask, 2));
-                            log("  depth: " + camera.depth);
-                            log("");
-
-                            if (cameraName.Equals("InternalCamera"))
-                            {
-                                O_Interior = camera;
-                            }
-                            if (cameraName.Equals("GalaxyCamera"))
-                            {
-                                O_Galaxy = camera;
-                            }
-
-                            if (cameraName.Equals("Camera ScaledSpace"))
-                            {
-                                O_SclaledSpace = camera;
-                                log("sky cam rot = " + camera.transform.rotation.eulerAngles.ToString());
-                            }
-                        }
-                    }
-                }
-
-                //Instantiate Cameras for all Layers
-                camRight_Interior = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
-                camLeft_Interior = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
-
-                camRight_Near = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
-                camLeft_Near = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
-
-                camRight_Far = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
-                camLeft_Far = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
-
-                leftSky = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
-                rightSky = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
-
-                leftStars = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
-                rightStars = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
-
-                //copy Properties from Original Cameras
-                leftSky.CopyFrom(O_SclaledSpace);
-                rightSky.CopyFrom(O_SclaledSpace);
-                leftStars.CopyFrom(O_Galaxy);
-                rightStars.CopyFrom(O_Galaxy);
-                camRight_Near.CopyFrom(O_Near);
-                camLeft_Near.CopyFrom(O_Near);
-                camLeft_Interior.CopyFrom(O_Interior);
-                camRight_Interior.CopyFrom(O_Interior);
-                camRight_Far.CopyFrom(O_Far);
-                camLeft_Far.CopyFrom(O_Far);
-
-
-                //set RenderTextures for Cameras
-                setRenderTexturesTo(hmdLeftEyeRenderTexture, hmdRightEyeRenderTexture);
-
-                //create left slave
-                leftSlave = camLeft_Interior.gameObject.AddOrGetComponent<RenderSlave>();
-                leftSlave.left = true;
-
-                //create right slave
-                rightSlave = camRight_Interior.gameObject.AddOrGetComponent<RenderSlave>();
-                rightSlave.left = false;
-
-
-
-                //Set Projectsions for all Cameras
-                HmdMatrix44_t projLeft = vrSystem.GetProjectionMatrix(EVREye.Eye_Left, camLeft_Near.nearClipPlane, camLeft_Near.farClipPlane);
-                HmdMatrix44_t projRight = vrSystem.GetProjectionMatrix(EVREye.Eye_Right, camRight_Near.nearClipPlane, camRight_Near.farClipPlane);
-
-                camLeft_Near.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft);
-                camRight_Near.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projRight);
-
-                HmdMatrix44_t projLeft2 = vrSystem.GetProjectionMatrix(EVREye.Eye_Left, camLeft_Interior.nearClipPlane, camLeft_Interior.farClipPlane);
-                HmdMatrix44_t projRight2 = vrSystem.GetProjectionMatrix(EVREye.Eye_Right, camRight_Interior.nearClipPlane, camRight_Interior.farClipPlane);
-
-                camLeft_Interior.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft2);
-                camRight_Interior.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projRight2);
-
-                HmdMatrix44_t projLeft3 = vrSystem.GetProjectionMatrix(EVREye.Eye_Left, camLeft_Far.nearClipPlane, camLeft_Far.farClipPlane);
-                HmdMatrix44_t projRight3 = vrSystem.GetProjectionMatrix(EVREye.Eye_Right, camRight_Far.nearClipPlane, camRight_Far.farClipPlane);
-
-                camLeft_Far.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft3);
-                camRight_Far.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projRight3);
-
-                HmdMatrix44_t projLeft4 = vrSystem.GetProjectionMatrix(EVREye.Eye_Left, leftSky.nearClipPlane, leftSky.farClipPlane);
-                HmdMatrix44_t projRight4 = vrSystem.GetProjectionMatrix(EVREye.Eye_Right, rightSky.nearClipPlane, rightSky.farClipPlane);
-
-                leftSky.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft4);
-                rightSky.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projRight4);
-
-                HmdMatrix44_t projLeft5 = vrSystem.GetProjectionMatrix(EVREye.Eye_Left, leftStars.nearClipPlane, leftStars.farClipPlane);
-                HmdMatrix44_t projRight5 = vrSystem.GetProjectionMatrix(EVREye.Eye_Right, rightStars.nearClipPlane, rightStars.farClipPlane);
-
-                leftStars.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft5);
-                rightStars.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projRight5);
-
-
-                //disable All Cameras to increase Performance
-                O_SclaledSpace.enabled = false;
-                O_Galaxy.enabled = false;
-                O_Near.enabled = false;
-                O_Far.enabled = false;
-                O_Interior.enabled = false;
-
-                
-
-                camLeft_Near.enabled = false;
-                camRight_Near.enabled = false;
-
-                camLeft_Far.enabled = false;
-                camRight_Far.enabled = false;
-
-                leftSky.enabled = false;
-                rightSky.enabled = false;
-
-                leftStars.enabled = false;
-                rightStars.enabled = false;
-
-                camLeft_Interior.enabled = false;
-                camRight_Interior.enabled = false;
-
-
-                
-                //activate slaves
-                posTracker.HmdOn = true;
-                leftSlave.HmdOn = true;
-                rightSlave.HmdOn = true;
-
-                //initialize active kerbal:
-                activeKerbal = CameraManager.Instance.IVACameraActiveKerbal;
-                lastKerbalID = CameraManager.Instance.IVACameraActiveKerbalIndex;
-
+                //add on vesselchange callback
+                GameEvents.onVesselChange.Add(onVesselChange);
             }
             if (HmdOn)
             {
@@ -608,6 +460,7 @@ namespace KerbalVR
                     camLeft_Interior.Render();
                     camRight_Interior.Render();
                 }
+                //if someone knows how to fix the other cameras corectly please tell me!
                 else if(CameraManager.Instance.currentCameraMode.Equals(CameraManager.CameraMode.Map))
                 {
                     O_Galaxy.Render();
@@ -622,6 +475,8 @@ namespace KerbalVR
                 }
             }
         }
+
+        
 
         /*void OnDestroy()
         {
@@ -651,6 +506,168 @@ namespace KerbalVR
 
             camLeft_Far.targetTexture = left;
             camRight_Far.targetTexture = right;
+        }
+
+        private void setupCameras()
+        {
+            foreach (string cameraName in cameraNamesToRender)
+            {
+                foreach (Camera camera in Camera.allCameras)
+                {
+                    if (cameraName.Equals(camera.name))
+                    {
+                        switch (camera.name)
+                        {
+                            case "GalaxyCamera":
+                                O_Galaxy = camera;
+                                break;
+                            case "Camera ScaledSpace":
+                                O_SclaledSpace = camera;
+                                break;
+                            case "Camera 01":
+                                O_Far = camera;
+                                break;
+                            case "Camera 00":
+                                O_Near = camera;
+                                break;
+                            default:
+                                break;
+                        }
+
+
+                        camera.gameObject.AddOrGetComponent<posTracker>();
+
+                        log("Camera:");
+                        log("  Name:  " + camera.name);
+                        log("  mask:  " + Convert.ToString(camera.cullingMask, 2));
+                        log("  depth: " + camera.depth);
+                        log("");
+
+                        if (cameraName.Equals("InternalCamera"))
+                        {
+                            O_Interior = camera;
+                        }
+                        if (cameraName.Equals("GalaxyCamera"))
+                        {
+                            O_Galaxy = camera;
+                        }
+
+                        if (cameraName.Equals("Camera ScaledSpace"))
+                        {
+                            O_SclaledSpace = camera;
+                            log("sky cam rot = " + camera.transform.rotation.eulerAngles.ToString());
+                        }
+                    }
+                }
+            }
+
+            //Instantiate Cameras for all Layers
+            camRight_Interior = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
+            camLeft_Interior = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
+
+            camRight_Near = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
+            camLeft_Near = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
+
+            camRight_Far = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
+            camLeft_Far = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
+
+            leftSky = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
+            rightSky = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
+
+            leftStars = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
+            rightStars = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
+
+            //copy Properties from Original Cameras
+            leftSky.CopyFrom(O_SclaledSpace);
+            rightSky.CopyFrom(O_SclaledSpace);
+            leftStars.CopyFrom(O_Galaxy);
+            rightStars.CopyFrom(O_Galaxy);
+            camRight_Near.CopyFrom(O_Near);
+            camLeft_Near.CopyFrom(O_Near);
+            camLeft_Interior.CopyFrom(O_Interior);
+            camRight_Interior.CopyFrom(O_Interior);
+            camRight_Far.CopyFrom(O_Far);
+            camLeft_Far.CopyFrom(O_Far);
+
+
+            //set RenderTextures for Cameras
+            setRenderTexturesTo(hmdLeftEyeRenderTexture, hmdRightEyeRenderTexture);
+
+            //create left slave
+            leftSlave = camLeft_Interior.gameObject.AddOrGetComponent<RenderSlave>();
+            leftSlave.left = true;
+
+            //create right slave
+            rightSlave = camRight_Interior.gameObject.AddOrGetComponent<RenderSlave>();
+            rightSlave.left = false;
+
+
+
+            //Set Projectsions for all Cameras
+            HmdMatrix44_t projLeft = vrSystem.GetProjectionMatrix(EVREye.Eye_Left, camLeft_Near.nearClipPlane, camLeft_Near.farClipPlane);
+            HmdMatrix44_t projRight = vrSystem.GetProjectionMatrix(EVREye.Eye_Right, camRight_Near.nearClipPlane, camRight_Near.farClipPlane);
+
+            camLeft_Near.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft);
+            camRight_Near.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projRight);
+
+            HmdMatrix44_t projLeft2 = vrSystem.GetProjectionMatrix(EVREye.Eye_Left, camLeft_Interior.nearClipPlane, camLeft_Interior.farClipPlane);
+            HmdMatrix44_t projRight2 = vrSystem.GetProjectionMatrix(EVREye.Eye_Right, camRight_Interior.nearClipPlane, camRight_Interior.farClipPlane);
+
+            camLeft_Interior.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft2);
+            camRight_Interior.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projRight2);
+
+            HmdMatrix44_t projLeft3 = vrSystem.GetProjectionMatrix(EVREye.Eye_Left, camLeft_Far.nearClipPlane, camLeft_Far.farClipPlane);
+            HmdMatrix44_t projRight3 = vrSystem.GetProjectionMatrix(EVREye.Eye_Right, camRight_Far.nearClipPlane, camRight_Far.farClipPlane);
+
+            camLeft_Far.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft3);
+            camRight_Far.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projRight3);
+
+            HmdMatrix44_t projLeft4 = vrSystem.GetProjectionMatrix(EVREye.Eye_Left, leftSky.nearClipPlane, leftSky.farClipPlane);
+            HmdMatrix44_t projRight4 = vrSystem.GetProjectionMatrix(EVREye.Eye_Right, rightSky.nearClipPlane, rightSky.farClipPlane);
+
+            leftSky.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft4);
+            rightSky.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projRight4);
+
+            HmdMatrix44_t projLeft5 = vrSystem.GetProjectionMatrix(EVREye.Eye_Left, leftStars.nearClipPlane, leftStars.farClipPlane);
+            HmdMatrix44_t projRight5 = vrSystem.GetProjectionMatrix(EVREye.Eye_Right, rightStars.nearClipPlane, rightStars.farClipPlane);
+
+            leftStars.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft5);
+            rightStars.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projRight5);
+
+
+            //disable All Cameras to increase Performance
+            O_SclaledSpace.enabled = false;
+            O_Galaxy.enabled = false;
+            O_Near.enabled = false;
+            O_Far.enabled = false;
+            O_Interior.enabled = false;
+
+            camLeft_Near.enabled = false;
+            camRight_Near.enabled = false;
+
+            camLeft_Far.enabled = false;
+            camRight_Far.enabled = false;
+
+            leftSky.enabled = false;
+            rightSky.enabled = false;
+
+            leftStars.enabled = false;
+            rightStars.enabled = false;
+
+            camLeft_Interior.enabled = false;
+            camRight_Interior.enabled = false;
+
+
+
+            //activate slaves
+            posTracker.HmdOn = true;
+            leftSlave.HmdOn = true;
+            rightSlave.HmdOn = true;
+
+            //initialize active kerbal:
+            activeKerbal = CameraManager.Instance.IVACameraActiveKerbal;
+            lastKerbalID = CameraManager.Instance.IVACameraActiveKerbalIndex;
+
         }
 
         private void setup()
