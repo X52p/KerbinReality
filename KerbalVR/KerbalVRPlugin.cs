@@ -21,6 +21,8 @@ namespace KerbalVR
         static Kerbal activeKerbal = null;
         static int lastKerbalID = -1;
 
+        static CameraManager.CameraMode activeCameraMode;
+
         public static List<Camera> leftCameras = new List<Camera>();
         public static List<Camera> rightCameras = new List<Camera>();
 
@@ -200,10 +202,11 @@ namespace KerbalVR
                 if (!gotPoses && HmdOn)
                 {
                     lock (KerbalVRPlugin.hmdRightEyeRenderTexture) lock (KerbalVRPlugin.hmdLeftEyeRenderTexture)
-                        {
+                        {                           
                             //check if active kerbal changed
-                            if (CameraManager.Instance.IVACameraActiveKerbalIndex != lastKerbalID)
+                            if (CameraManager.Instance.currentCameraMode.Equals(CameraManager.CameraMode.IVA) && CameraManager.Instance.IVACameraActiveKerbalIndex != lastKerbalID)
                             {
+                                
                                 //reenable last kerbal
                                 activeKerbal.SetVisibleInPortrait(true);
                                 activeKerbal.gameObject.active = true;
@@ -344,6 +347,7 @@ namespace KerbalVR
 
         void Update()
         {
+
             //increase prediction
             if (Input.GetKeyDown(KeyCode.KeypadPlus))
             {
@@ -375,11 +379,6 @@ namespace KerbalVR
 
                 //setup OpenVR
                 setup();
-
-
-                int mask = 0;
-                Camera pit = Camera.main;
-
 
                 uint renderTextureWidth = 0;
                 uint renderTextureHeight = 0;
@@ -430,15 +429,6 @@ namespace KerbalVR
                             }
 
 
-                            mask |= camera.cullingMask;
-
-                            max = Math.Max(camera.farClipPlane, max);
-                            string bitMask = Convert.ToString(camera.cullingMask, 2);
-                            for (int i = 0; i < distances.Length; i++)
-                            {
-                                distances[i] = Math.Max(distances[i], Math.Max(camera.layerCullDistances[i], camera.farClipPlane));
-                            }
-
                             camera.gameObject.AddOrGetComponent<posTracker>();
 
                             log("Camera:");
@@ -449,9 +439,6 @@ namespace KerbalVR
 
                             if (cameraName.Equals("InternalCamera"))
                             {
-                                pit = camera;
-                                camLeft_Near = camera;
-                                leftCameras.Add(camera);
                                 O_Interior = camera;
                             }
                             if (cameraName.Equals("GalaxyCamera"))
@@ -498,21 +485,7 @@ namespace KerbalVR
 
 
                 //set RenderTextures for Cameras
-                leftStars.targetTexture = hmdLeftEyeRenderTexture;
-                rightStars.targetTexture = hmdRightEyeRenderTexture;
-                
-                leftSky.targetTexture = hmdLeftEyeRenderTexture;
-                rightSky.targetTexture = hmdRightEyeRenderTexture;
-
-                camLeft_Near.targetTexture = hmdLeftEyeRenderTexture;
-                camRight_Near.targetTexture = hmdRightEyeRenderTexture;
-
-                camLeft_Interior.targetTexture = hmdLeftEyeRenderTexture;
-                camRight_Interior.targetTexture = hmdRightEyeRenderTexture;
-                
-                camLeft_Far.targetTexture = hmdLeftEyeRenderTexture;
-                camRight_Far.targetTexture = hmdRightEyeRenderTexture;
-
+                setRenderTexturesTo(hmdLeftEyeRenderTexture, hmdRightEyeRenderTexture);
 
                 //create left slave
                 leftSlave = camLeft_Interior.gameObject.AddOrGetComponent<RenderSlave>();
@@ -563,6 +536,8 @@ namespace KerbalVR
                 O_Far.enabled = false;
                 O_Interior.enabled = false;
 
+                
+
                 camLeft_Near.enabled = false;
                 camRight_Near.enabled = false;
 
@@ -592,32 +567,59 @@ namespace KerbalVR
             }
             if (HmdOn)
             {
-                leftStars.Render();
-                rightStars.Render();
+                if (!CameraManager.Instance.currentCameraMode.Equals(activeCameraMode))
+                {
+                    if (CameraManager.Instance.currentCameraMode.Equals(CameraManager.CameraMode.Flight) || CameraManager.Instance.currentCameraMode.Equals(CameraManager.CameraMode.External))
+                    {
+                     //   Camera.main.enabled = true;
+                        setRenderTexturesTo(null, null);
 
-                leftSky.Render();
-                rightSky.Render();
+                        O_SclaledSpace.enabled = true;
+                        O_Galaxy.enabled = true;
+                        O_Near.enabled = true;
+                        O_Far.enabled = true;
+                        //O_Interior.enabled = false;
+                    }
+                    else
+                    {
+                       setRenderTexturesTo(hmdLeftEyeRenderTexture, hmdRightEyeRenderTexture);
+                       O_SclaledSpace.enabled = false;
+                       O_Galaxy.enabled = false;
+                       O_Near.enabled = false;
+                       O_Far.enabled = false;
+                       O_Interior.enabled = false;
+                    }
+                }
 
-              //  Graphics.CopyTexture(hmdRightEyeRenderTexture, hmdLeftEyeRenderTexture);
+          
+                if (CameraManager.Instance.currentCameraMode.Equals(CameraManager.CameraMode.IVA)) { 
+                    leftStars.Render();
+                    rightStars.Render();
 
-               // int xstart = 0;
-               // int ystart = 0;
-               // int width = hmdLeftEyeRenderTexture.width;
-               // int height = hmdLeftEyeRenderTexture.height;
-               // int destX = 0;
-               // int destY = 0;
+                    leftSky.Render();
+                    rightSky.Render();
 
-                camLeft_Far.Render();
-                camRight_Far.Render();
+                    camLeft_Far.Render();
+                    camRight_Far.Render();
 
-               // Graphics.CopyTexture(skyTexture, 0, 0, xstart + eyeDiference, ystart, width, height, hmdLeftEyeRenderTexture, 0, 0, destX, destY);
-               // Graphics.CopyTexture(skyTexture, 0, 0, xstart, ystart, width, height, hmdRightEyeRenderTexture, 0, 0, destX, destY);
+                    camLeft_Near.Render();
+                    camRight_Near.Render();
 
-                camLeft_Near.Render();
-                camRight_Near.Render();
-
-                camLeft_Interior.Render();
-                camRight_Interior.Render();
+                    camLeft_Interior.Render();
+                    camRight_Interior.Render();
+                }
+                else if(CameraManager.Instance.currentCameraMode.Equals(CameraManager.CameraMode.Map))
+                {
+                    O_Galaxy.Render();
+                    O_SclaledSpace.Render();
+                }
+                else
+                {
+                    O_Galaxy.Render();
+                    O_SclaledSpace.Render();
+                    O_Far.Render();
+                    O_Near.Render();                    
+                }
             }
         }
 
@@ -633,7 +635,25 @@ namespace KerbalVR
 
         }*/
 
-        public void setup()
+        private void setRenderTexturesTo(RenderTexture left, RenderTexture right)
+        {
+            leftStars.targetTexture = left;
+            rightStars.targetTexture = right;
+
+            leftSky.targetTexture = left;
+            rightSky.targetTexture = right;
+
+            camLeft_Near.targetTexture = left;
+            camRight_Near.targetTexture = right;
+
+            camLeft_Interior.targetTexture = left;
+            camRight_Interior.targetTexture = right;
+
+            camLeft_Far.targetTexture = left;
+            camRight_Far.targetTexture = right;
+        }
+
+        private void setup()
         {
             //init VR System and check for errors
             var error = EVRInitError.None;
