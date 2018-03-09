@@ -360,7 +360,6 @@ namespace KerbalVR
 
         void Update()
         {
-            
 
             //increase prediction
             if (Input.GetKeyDown(KeyCode.KeypadPlus))
@@ -434,7 +433,7 @@ namespace KerbalVR
                     }
                     else
                     {
-                       setRenderTexturesTo(hmdLeftEyeRenderTexture, hmdRightEyeRenderTexture);
+                       setRenderTexturesTo(null, null);
                        O_SclaledSpace.enabled = false;
                        O_Galaxy.enabled = false;
                        O_Near.enabled = false;
@@ -443,22 +442,22 @@ namespace KerbalVR
                     }
                 }
 
-          
-                if (CameraManager.Instance.currentCameraMode.Equals(CameraManager.CameraMode.IVA)) { 
+                
+
+                if (CameraManager.Instance.currentCameraMode.Equals(CameraManager.CameraMode.IVA)) {
+                    
                     leftStars.Render();
-                    rightStars.Render();
-
                     leftSky.Render();
-                    rightSky.Render();
-
                     camLeft_Far.Render();
-                    camRight_Far.Render();
-
                     camLeft_Near.Render();
-                    camRight_Near.Render();
-
                     camLeft_Interior.Render();
+
+                    rightStars.Render();
+                    rightSky.Render();
+                    camRight_Far.Render();
+                    camRight_Near.Render();
                     camRight_Interior.Render();
+
                 }
                 //if someone knows how to fix the other cameras corectly please tell me!
                 else if(CameraManager.Instance.currentCameraMode.Equals(CameraManager.CameraMode.Map))
@@ -560,7 +559,7 @@ namespace KerbalVR
                     }
                 }
             }
-
+            
             //Instantiate Cameras for all Layers
             camRight_Interior = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
             camLeft_Interior = (Camera)Camera.Instantiate(Camera.main, Camera.main.transform.position + new Vector3(0, 0, 0), Camera.main.transform.rotation);
@@ -612,9 +611,11 @@ namespace KerbalVR
 
             HmdMatrix44_t projLeft2 = vrSystem.GetProjectionMatrix(EVREye.Eye_Left, camLeft_Interior.nearClipPlane, camLeft_Interior.farClipPlane);
             HmdMatrix44_t projRight2 = vrSystem.GetProjectionMatrix(EVREye.Eye_Right, camRight_Interior.nearClipPlane, camRight_Interior.farClipPlane);
-
+                        
             camLeft_Interior.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft2);
             camRight_Interior.projectionMatrix = MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projRight2);
+            camLeft_Interior.SetStereoProjectionMatrix(Camera.StereoscopicEye.Left, MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft2));
+            camLeft_Interior.SetStereoProjectionMatrix(Camera.StereoscopicEye.Right, MathUtils.Matrix4x4_OpenVr2UnityFormat(ref projLeft2));
 
             HmdMatrix44_t projLeft3 = vrSystem.GetProjectionMatrix(EVREye.Eye_Left, camLeft_Far.nearClipPlane, camLeft_Far.farClipPlane);
             HmdMatrix44_t projRight3 = vrSystem.GetProjectionMatrix(EVREye.Eye_Right, camRight_Far.nearClipPlane, camRight_Far.farClipPlane);
